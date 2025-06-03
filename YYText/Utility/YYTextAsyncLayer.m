@@ -14,7 +14,7 @@
 
 
 /// Global display queue, used for content rendering.
-static dispatch_queue_t YYTextAsyncLayerGetDisplayQueue() {
+static dispatch_queue_t YYTextAsyncLayerGetDisplayQueue(void) {
 #define MAX_QUEUE_COUNT 16
     static int queueCount;
     static dispatch_queue_t queues[MAX_QUEUE_COUNT];
@@ -40,7 +40,7 @@ static dispatch_queue_t YYTextAsyncLayerGetDisplayQueue() {
 #undef MAX_QUEUE_COUNT
 }
 
-static dispatch_queue_t YYTextAsyncLayerGetReleaseQueue() {
+static dispatch_queue_t YYTextAsyncLayerGetReleaseQueue(void) {
 #ifdef YYDispatchQueuePool_h
     return YYDispatchQueueGetForQOS(NSQualityOfServiceDefault);
 #else
@@ -130,7 +130,7 @@ static dispatch_queue_t YYTextAsyncLayerGetReleaseQueue() {
         if (task.willDisplay) task.willDisplay(self);
         _YYTextSentinel *sentinel = _sentinel;
         int32_t value = sentinel.value;
-        BOOL (^isCancelled)() = ^BOOL() {
+        BOOL (^isCancelled)(void) = ^BOOL() {
             return value != sentinel.value;
         };
         CGSize size = self.bounds.size;
@@ -157,7 +157,7 @@ static dispatch_queue_t YYTextAsyncLayerGetReleaseQueue() {
             }
             UIGraphicsBeginImageContextWithOptions(size, opaque, scale);
             CGContextRef context = UIGraphicsGetCurrentContext();
-            if (opaque && context) {
+            if (opaque) {
                 CGContextSaveGState(context); {
                     if (!backgroundColor || CGColorGetAlpha(backgroundColor) < 1) {
                         CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
@@ -204,7 +204,7 @@ static dispatch_queue_t YYTextAsyncLayerGetReleaseQueue() {
         // 在iOS17后（Xcode15+编译），传入的size为0，下面方法会出现崩溃
         UIGraphicsBeginImageContextWithOptions(size, self.opaque, self.contentsScale);
         CGContextRef context = UIGraphicsGetCurrentContext();
-        if (self.opaque && context) {
+        if (self.opaque) {
             CGSize size = self.bounds.size;
             size.width *= self.contentsScale;
             size.height *= self.contentsScale;
