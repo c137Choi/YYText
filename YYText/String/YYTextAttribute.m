@@ -16,7 +16,7 @@
 #import "YYTextArchiver.h"
 
 
-static double _YYDeviceSystemVersion() {
+static double _YYDeviceSystemVersion(void) {
     static double version;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -113,7 +113,7 @@ YYTextAttributeType YYTextAttributeGetType(NSString *name){
         dic[YYTextGlyphTransformAttributeName] = YYText;
     });
     NSNumber *num = dic[name];
-    if (num != nil) return num.integerValue;
+    if (num) return num.integerValue;
     return YYTextAttributeTypeNone;
 }
 

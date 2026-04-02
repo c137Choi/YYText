@@ -17,7 +17,7 @@
 #import <libkern/OSAtomic.h>
 
 
-static dispatch_queue_t YYLabelGetReleaseQueue() {
+static dispatch_queue_t YYLabelGetReleaseQueue(void) {
     return dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0);
 }
 
@@ -231,6 +231,41 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
     _highlight = nil;
     _highlightLayout = nil;
     _shrinkHighlightLayout = nil;
+}
+
+- (void)_endTrackedTouch:(NSSet *)touches {
+    [self _endLongPressTimer];
+
+    UITouch *touch = touches.anyObject;
+    CGPoint point = [touch locationInView:self];
+    if (!_state.touchMoved && _textTapAction) {
+        NSRange range = NSMakeRange(NSNotFound, 0);
+        CGRect rect = CGRectNull;
+        CGPoint point = [self _convertPointToLayout:_touchBeganPoint];
+        YYTextRange *textRange = [self._innerLayout textRangeAtPoint:point];
+        CGRect textRect = [self._innerLayout rectForRange:textRange];
+        textRect = [self _convertRectFromLayout:textRect];
+        if (textRange) {
+            range = textRange.asRange;
+            rect = textRect;
+        }
+        _textTapAction(self, _innerText, range, rect);
+    }
+
+    if (_highlight) {
+        if (!_state.touchMoved || [self _getHighlightAtPoint:point range:NULL] == _highlight) {
+            YYTextAction tapAction = _highlight.tapAction ? _highlight.tapAction : _highlightTapAction;
+            if (tapAction) {
+                YYTextPosition *start = [YYTextPosition positionWithOffset:_highlightRange.location];
+                YYTextPosition *end = [YYTextPosition positionWithOffset:_highlightRange.location + _highlightRange.length affinity:YYTextAffinityBackward];
+                YYTextRange *range = [YYTextRange rangeWithStart:start end:end];
+                CGRect rect = [self._innerLayout rectForRange:range];
+                rect = [self _convertRectFromLayout:rect];
+                tapAction(self, _innerText, _highlightRange, rect);
+            }
+        }
+        [self _removeHighlightAnimated:_fadeOnHighlight];
+    }
 }
 
 - (void)_endTouch {
@@ -588,49 +623,26 @@ static dispatch_queue_t YYLabelGetReleaseQueue() {
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
-    UITouch *touch = touches.anyObject;
-    CGPoint point = [touch locationInView:self];
-    
     if (_state.trackingTouch) {
-        [self _endLongPressTimer];
-        if (!_state.touchMoved && _textTapAction) {
-            NSRange range = NSMakeRange(NSNotFound, 0);
-            CGRect rect = CGRectNull;
-            CGPoint point = [self _convertPointToLayout:_touchBeganPoint];
-            YYTextRange *textRange = [self._innerLayout textRangeAtPoint:point];
-            CGRect textRect = [self._innerLayout rectForRange:textRange];
-            textRect = [self _convertRectFromLayout:textRect];
-            if (textRange) {
-                range = textRange.asRange;
-                rect = textRect;
-            }
-            _textTapAction(self, _innerText, range, rect);
-        }
-        
-        if (_highlight) {
-            if (!_state.touchMoved || [self _getHighlightAtPoint:point range:NULL] == _highlight) {
-                YYTextAction tapAction = _highlight.tapAction ? _highlight.tapAction : _highlightTapAction;
-                if (tapAction) {
-                    YYTextPosition *start = [YYTextPosition positionWithOffset:_highlightRange.location];
-                    YYTextPosition *end = [YYTextPosition positionWithOffset:_highlightRange.location + _highlightRange.length affinity:YYTextAffinityBackward];
-                    YYTextRange *range = [YYTextRange rangeWithStart:start end:end];
-                    CGRect rect = [self._innerLayout rectForRange:range];
-                    rect = [self _convertRectFromLayout:rect];
-                    tapAction(self, _innerText, _highlightRange, rect);
-                }
-            }
-            [self _removeHighlightAnimated:_fadeOnHighlight];
-        }
+        [self _endTrackedTouch:touches];
     }
     
     if (!_state.swallowTouch) {
         [super touchesEnded:touches withEvent:event];
     }
+    [self _endTouch];
 }
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event {
+    if (_state.trackingTouch) {
+        [self _endTrackedTouch:touches];
+    }
+
+    if (!_state.swallowTouch) {
+        [super touchesCancelled:touches withEvent:event];
+    }
+
     [self _endTouch];
-    if (!_state.swallowTouch) [super touchesCancelled:touches withEvent:event];
 }
 
 #pragma mark - Properties

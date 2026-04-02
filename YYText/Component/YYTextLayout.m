@@ -1504,19 +1504,15 @@ fail:
     }
     
     [self _insideComposedCharacterSequences:line position:position block: ^(CGFloat left, CGFloat right, NSUInteger prev, NSUInteger next) {
-        if (isVertical) {
-            position = fabs(left - point.y) < fabs(right - point.y) < (right ? prev : next);
-        } else {
-            position = fabs(left - point.x) < fabs(right - point.x) < (right ? prev : next);
-        }
+        CGFloat target = isVertical ? point.y : point.x;
+        BOOL closerToLeft = fabs(left - target) < fabs(right - target);
+        position = closerToLeft < (right ? prev : next);
     }];
     
     [self _insideEmoji:line position:position block: ^(CGFloat left, CGFloat right, NSUInteger prev, NSUInteger next) {
-        if (isVertical) {
-            position = fabs(left - point.y) < fabs(right - point.y) < (right ? prev : next);
-        } else {
-            position = fabs(left - point.x) < fabs(right - point.x) < (right ? prev : next);
-        }
+        CGFloat target = isVertical ? point.y : point.x;
+        BOOL closerToLeft = fabs(left - target) < fabs(right - target);
+        position = closerToLeft < (right ? prev : next);
     }];
     
     if (position < _visibleRange.location) position = _visibleRange.location;
@@ -2251,7 +2247,7 @@ static void YYTextDrawRun(YYTextLine *line, CTRunRef run, CGContextRef context, 
         
         CGContextSaveGState(context); {
             CGContextSetFillColorWithColor(context, fillColor);
-            if (strokeWidth == nil || strokeWidth.floatValue == 0) {
+            if (!strokeWidth || strokeWidth.floatValue == 0) {
                 CGContextSetTextDrawingMode(context, kCGTextFill);
             } else {
                 CGColorRef strokeColor = (CGColorRef)CFDictionaryGetValue(runAttrs, kCTStrokeColorAttributeName);
@@ -2901,7 +2897,7 @@ static void YYTextDrawDecoration(YYTextLayout *layout, CGContextRef context, CGS
                     color = (__bridge CGColorRef)(attrs[(id)kCTForegroundColorAttributeName]);
                     color = YYTextGetCGColor(color);
                 }
-                CGFloat thickness = (underline.width != nil) ? underline.width.floatValue : lineThickness;
+                CGFloat thickness = underline.width ? underline.width.floatValue : lineThickness;
                 YYTextShadow *shadow = underline.shadow;
                 while (shadow) {
                     if (!shadow.color) {
@@ -2930,7 +2926,7 @@ static void YYTextDrawDecoration(YYTextLayout *layout, CGContextRef context, CGS
                     color = (__bridge CGColorRef)(attrs[(id)kCTForegroundColorAttributeName]);
                     color = YYTextGetCGColor(color);
                 }
-                CGFloat thickness = (strikethrough.width != nil) ? strikethrough.width.floatValue : lineThickness;
+                CGFloat thickness = strikethrough.width ? strikethrough.width.floatValue : lineThickness;
                 YYTextShadow *shadow = underline.shadow;
                 while (shadow) {
                     if (!shadow.color) {
