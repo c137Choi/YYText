@@ -1504,15 +1504,19 @@ fail:
     }
     
     [self _insideComposedCharacterSequences:line position:position block: ^(CGFloat left, CGFloat right, NSUInteger prev, NSUInteger next) {
-        CGFloat target = isVertical ? point.y : point.x;
-        BOOL closerToLeft = fabs(left - target) < fabs(right - target);
-        position = closerToLeft < (right ? prev : next);
+        if (isVertical) {
+            position = (fabs(left - point.y) < fabs(right - point.y)) ? prev : next;
+        } else {
+            position = (fabs(left - point.x) < fabs(right - point.x)) ? prev : next;
+        }
     }];
     
     [self _insideEmoji:line position:position block: ^(CGFloat left, CGFloat right, NSUInteger prev, NSUInteger next) {
-        CGFloat target = isVertical ? point.y : point.x;
-        BOOL closerToLeft = fabs(left - target) < fabs(right - target);
-        position = closerToLeft < (right ? prev : next);
+        if (isVertical) {
+            position = (fabs(left - point.y) < fabs(right - point.y)) ? prev : next;
+        } else {
+            position = (fabs(left - point.x) < fabs(right - point.x)) ? prev : next;
+        }
     }];
     
     if (position < _visibleRange.location) position = _visibleRange.location;
@@ -3096,7 +3100,10 @@ static void YYTextDrawInnerShadow(YYTextLayout *layout, CGContextRef context, CG
                 CTRunGetPositions(run, CFRangeMake(0, 1), &runPosition);
                 CGRect runImageBounds = CTRunGetImageBounds(run, context, CFRangeMake(0, 0));
                 runImageBounds.origin.x += runPosition.x;
-                if (runImageBounds.size.width < 0.1 || runImageBounds.size.height < 0.1) continue;
+                if (runImageBounds.size.width < 0.1 || runImageBounds.size.height < 0.1) {
+                    shadow = shadow.subShadow;
+                    continue;
+                }
                 
                 CFDictionaryRef runAttrs = CTRunGetAttributes(run);
                 NSValue *glyphTransformValue = CFDictionaryGetValue(runAttrs, (__bridge const void *)(YYTextGlyphTransformAttributeName));

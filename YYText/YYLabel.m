@@ -257,7 +257,10 @@ static dispatch_queue_t YYLabelGetReleaseQueue(void) {
             YYTextAction tapAction = _highlight.tapAction ? _highlight.tapAction : _highlightTapAction;
             if (tapAction) {
                 YYTextPosition *start = [YYTextPosition positionWithOffset:_highlightRange.location];
-                YYTextPosition *end = [YYTextPosition positionWithOffset:_highlightRange.location + _highlightRange.length affinity:YYTextAffinityBackward];
+                NSUInteger endOffset = _highlightRange.location + _highlightRange.length;
+                NSUInteger visibleEnd = _innerLayout.visibleRange.location + _innerLayout.visibleRange.length;
+                if (endOffset > visibleEnd) endOffset = visibleEnd;
+                YYTextPosition *end = [YYTextPosition positionWithOffset:endOffset affinity:YYTextAffinityBackward];
                 YYTextRange *range = [YYTextRange rangeWithStart:start end:end];
                 CGRect rect = [self._innerLayout rectForRange:range];
                 rect = [self _convertRectFromLayout:rect];
@@ -270,7 +273,7 @@ static dispatch_queue_t YYLabelGetReleaseQueue(void) {
 
 - (void)_endTouch {
     [self _endLongPressTimer];
-    [self _removeHighlightAnimated:YES];
+    [self _removeHighlightAnimated:_fadeOnHighlight];
     _state.trackingTouch = NO;
 }
 
